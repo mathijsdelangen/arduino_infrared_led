@@ -1,6 +1,11 @@
+#include "FastLED.h"
+// http://www.tweaking4all.nl/hardware/arduino/arduino-ws2812-led/
+#define NUM_LEDS 30  // Number of RGB LEDs in the strip
+
 // Set pin numbers:
-const int infrared_pin       = 5;  // The ID of the infrared sensor
+const int LED_PIN            = 5;
 const int manual_control_pin = 6;  // The ID of the switch pin
+const int infrared_pin       = 7;  // The ID of the infrared sensor
 const int DELAY              = 100;
 const int ONE_MINUTE         = (60*1000)/DELAY;
 const int TIMER_TIMEOUT      = ONE_MINUTE;
@@ -15,8 +20,11 @@ int infrared_state           = 0;           // The initial state of the infrared
 state current_led_state      = OFF;         // Current LED state
 int led_on_timer             = 0;           // Timer to count how long the LED is on
 
+CRGB leds[NUM_LEDS];                        // Led array
+
 void setup()
 { 
+  FastLED.addLeds<NEOPIXEL, LED_PIN, RGB>(leds, NUM_LEDS);
   pinMode(infrared_pin,       INPUT);
   pinMode(manual_control_pin, INPUT);
 }
@@ -31,6 +39,7 @@ void loop()
   if ( button_state == HIGH )
   {
     switchMode();
+    delay(2000);
   }
   
   if ( infrared_state == HIGH )
@@ -49,7 +58,11 @@ void ledTimer()
   {
     if ( led_on_timer == 0 )
     {
-      // turn on the LED
+       // Turn LED on 
+       for ( int i = 0 ; i < NUM_LEDS ; ++i )
+        leds[i] = CRGB::GhostWhite;
+        
+      FastLED.show();       // Display LEDs 
     }
     led_on_timer++;
   }
@@ -59,6 +72,10 @@ void ledTimer()
     if ( led_on_timer > 0 )
     {
        // Turn LED off 
+       for ( int i = 0 ; i < NUM_LEDS ; ++i )
+        leds[i] = CRGB::Black;
+        
+      FastLED.show();       // Display LEDs 
     }
     led_on_timer = 0;
   }
