@@ -25,6 +25,7 @@ int   infrared_state         = 0;           // The initial state of the infrared
 state led_state              = OFF;         // Current LED state
 state prev_led_state         = OFF;
 long  led_on_timer           = 0;           // Timer to count how long the LED is on
+int   infrared_timer         = 0;
 
 CRGB leds[NUM_LEDS];                        // Led array
 
@@ -47,15 +48,12 @@ void loop()
   prev_button_state = button_state;
   button_state      = digitalRead(manual_control_pin);
   infrared_state    = digitalRead(infrared_pin);
-  
-  if ( prev_button_state != button_state )
-    determineNewState(button_state, infrared_state);
-  else
-    determineNewState(0, infrared_state);
+
+  determineNewState(button_state, infrared_state);
     
   checkTimeouts();
   executeLedState();
-  
+    
   //Serial.println("I saw something");
   
   delay(DELAY);
@@ -68,10 +66,10 @@ void determineNewState(int button_state, int infrared_state)
   Serial.print(", Infrared state:");
   Serial.println(infrared_state);
   
+  prev_led_state = led_state;
+  
   Serial.print("Prev state:");
   Serial.println(prev_led_state);
-
-  prev_led_state = led_state;
   
   switch (prev_led_state)
   {
@@ -92,10 +90,6 @@ void determineNewState(int button_state, int infrared_state)
         led_on_timer = 0;
     break;
   }
-  
-  Serial.print("New state:");
-  Serial.println(led_state);
-  
 }
 
 void checkTimeouts()
@@ -110,6 +104,9 @@ void checkTimeouts()
     led_state    = OFF;
     led_on_timer = 0;
   }
+  
+  Serial.print("New state:");
+  Serial.println(led_state);
 }
 
 void executeLedState()
@@ -124,7 +121,6 @@ void executeLedState()
     if ( led_state == ON_BY_INFRARED )
       led_on_timer++;
 }
-
 
 void allLedsWhite()
 {
