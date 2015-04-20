@@ -6,7 +6,7 @@
 // Set pin numbers:
 const int LED_PIN            = 5;
 const int manual_control_pin = 6;  // The ID of the switch pin
-const int infrared_pin       = 3;  // The ID of the infrared sensor
+const int infrared_pin       = 7;  // The ID of the infrared sensor
 const int DELAY              = 100;
 const long ONE_SECOND        = (1000)/DELAY;
 const long ONE_MINUTE        = 60*ONE_SECOND;
