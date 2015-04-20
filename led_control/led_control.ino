@@ -128,6 +128,8 @@ void executeLedState()
 
 void allLedsWhite()
 {
+  fadeIn();
+  return;
   // Turn LEDs on 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
     leds[i] = CRGB::Gold;
@@ -137,9 +139,111 @@ void allLedsWhite()
 
 void allLedsOff()
 {
+  fadeOut();
+  return;
   // Turn LEDs off 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
     leds[i] = CRGB::Black;
     
   FastLED.show();       // Display LEDs 
+}
+
+/** Extra functionalities from the FastLed tutorial **/
+void oneByOne()
+{
+  for(int j = 0; j < 3; j++) { 
+    for(int i = 0 ; i < NUM_LEDS; i++ ) {
+      memset(leds, 0, NUM_LEDS * 3);
+      switch(j) { 
+        case 0: leds[i].r = 255; break;
+        case 1: leds[i].g = 255; break;
+        case 2: leds[i].b = 255; break;
+      }
+      FastLED.show();
+      delay(10);
+    }
+  }
+}
+
+void growingStripes()
+{
+  for(int j = 0; j < 3; j++) { 
+    memset(leds, 0, NUM_LEDS * 3);
+    for(int i = 0 ; i < NUM_LEDS; i++ ) {
+      switch(j) { 
+        case 0: leds[i].r = 255; break;
+        case 1: leds[i].g = 255; break;
+        case 2: leds[i].b = 255; break;
+      }
+      FastLED.show();
+      delay(10);
+    }
+    for(int i = NUM_LEDS-1 ; i >= 0; i-- ) {
+      switch(j) { 
+        case 0: leds[i].r = 0; break;
+        case 1: leds[i].g = 0; break;
+        case 2: leds[i].b = 0; break;
+      }
+      FastSPI_LED.show();
+      delay(1);
+    }
+  }
+}
+
+void FadeInAndOut()
+{
+  // Fade in/fade out
+  for(int j = 0; j < 3; j++ ) { 
+    memset(leds, 0, NUM_LEDS * 3);
+    for(int k = 0; k < 256; k++) { 
+      for(int i = 0; i < NUM_LEDS; i++ ) {
+        switch(j) { 
+          case 0: leds[i].r = k; break;
+          case 1: leds[i].g = k; break;
+          case 2: leds[i].b = k; break;
+        }
+      }
+      FastLED.show();
+      delay(3);
+    }
+    for(int k = 255; k >= 0; k--) { 
+      for(int i = 0; i < NUM_LEDS; i++ ) {
+        switch(j) { 
+          case 0: leds[i].r = k; break;
+          case 1: leds[i].g = k; break;
+          case 2: leds[i].b = k; break;
+        }
+      }
+      FastLED.show();
+      delay(3);
+    }
+  }
+}
+
+void fadeIn()
+{
+   for(int k = 0; k <= 255; k=k+20)
+   {
+      for(int i = 0; i < NUM_LEDS; i++)
+      {
+        leds[i].r = k;
+        leds[i].g = k;
+        leds[i].b = k;
+        FastLED.show();
+        delay(1);
+      }
+      
+   }
+}
+void fadeOut()
+{
+  for(int k = 255; k >= 0; k=k-5)
+      for(int i = 0; i < NUM_LEDS; i++)
+      {
+        leds[i].r = k;
+        leds[i].g = k;
+        leds[i].b = k;
+        FastLED.show();
+        delay(1);
+      }
 }
