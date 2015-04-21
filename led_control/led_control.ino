@@ -49,7 +49,8 @@ void loop()
   button_state      = digitalRead(manual_control_pin);
   infrared_state    = digitalRead(infrared_pin);
 
-  determineNewState(button_state, infrared_state);
+  int temp_button_state = prev_button_state != button_state && button_state == HIGH;
+  determineNewState(temp_button_state, infrared_state);
     
   checkTimeouts();
   executeLedState();
@@ -114,9 +115,9 @@ void executeLedState()
   // Something changed
   if ( prev_led_state != led_state )
      if ( led_state == OFF )
-       allLedsOff();
+       fadeOut();
      else
-       allLedsWhite();
+       fadeIn();
   else // The same state
     if ( led_state == ON_BY_INFRARED )
       led_on_timer++;
@@ -124,24 +125,24 @@ void executeLedState()
 
 void allLedsWhite()
 {
-  fadeIn();
-  return;
   // Turn LEDs on 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
-    leds[i] = CRGB::Gold;
+    leds[i] = CRGB::White;
     
   FastLED.show();       // Display LEDs 
 }
 
 void allLedsOff()
 {
-  fadeOut();
-  return;
   // Turn LEDs off 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
     leds[i] = CRGB::Black;
     
   FastLED.show();       // Display LEDs 
+  
+  // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
+  Serial.println("LED turned off, waiting 5s...");
+  delay(5000);
 }
 
 /** Extra functionalities from the FastLed tutorial **/
@@ -242,4 +243,8 @@ void fadeOut()
         FastLED.show();
         delay(1);
       }
+      
+  // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
+  Serial.println("LED turned off, waiting 5s...");
+  delay(5000);
 }
