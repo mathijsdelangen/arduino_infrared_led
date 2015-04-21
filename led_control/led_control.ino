@@ -45,14 +45,24 @@ void setup()
 void loop()
 {
   // Read button value
-  prev_button_state = button_state;
+//  prev_button_state = button_state;
   button_state      = digitalRead(manual_control_pin);
   infrared_state    = digitalRead(infrared_pin);
-
-  determineNewState(button_state, infrared_state);
+  
+  Serial.print("Button state:");
+  Serial.print(button_state);
+  Serial.print(", Infrared state:");
+  Serial.println(infrared_state);
+  
+  if ( infrared_state == HIGH )
+    allLedsWhite();
+  else
+    allLedsOff();
     
-  checkTimeouts();
-  executeLedState();
+//  determineNewState(button_state, infrared_state);
+//    
+//  checkTimeouts();
+//  executeLedState();
     
   //Serial.println("I saw something");
   
@@ -60,12 +70,7 @@ void loop()
 }
 
 void determineNewState(int button_state, int infrared_state)
-{
-  Serial.print("Button state:");
-  Serial.print(button_state);
-  Serial.print(", Infrared state:");
-  Serial.println(infrared_state);
-  
+{  
   prev_led_state = led_state;
   
   Serial.print("Prev state:");
@@ -124,19 +129,15 @@ void executeLedState()
 
 void allLedsWhite()
 {
-  fadeIn();
-  return;
   // Turn LEDs on 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
-    leds[i] = CRGB::Gold;
+    leds[i] = CRGB::White;
     
   FastLED.show();       // Display LEDs 
 }
 
 void allLedsOff()
 {
-  fadeOut();
-  return;
   // Turn LEDs off 
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
     leds[i] = CRGB::Black;
@@ -228,18 +229,21 @@ void fadeIn()
         FastLED.show();
         delay(1);
       }
-      
    }
 }
+
 void fadeOut()
 {
   for(int k = 255; k >= 0; k=k-5)
-      for(int i = 0; i < NUM_LEDS; i++)
-      {
-        leds[i].r = k;
-        leds[i].g = k;
-        leds[i].b = k;
-        FastLED.show();
-        delay(1);
-      }
+  {
+    for(int i = 0; i < NUM_LEDS; i++)
+    {
+      leds[i].r = k;
+      leds[i].g = k;
+      leds[i].b = k;
+      FastLED.show();
+      delay(1);
+    }
+  }
 }
+
