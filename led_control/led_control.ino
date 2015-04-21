@@ -4,28 +4,32 @@
 #define NUM_LEDS 30  // Number of RGB LEDs in the strip
 
 // Set pin numbers:
-const int LED_PIN            = 5;
-const int manual_control_pin = 6;  // The ID of the switch pin
-const int infrared_pin       = 7;  // The ID of the infrared sensor
-const int DELAY              = 100;
-const long ONE_SECOND        = (1000)/DELAY;
-const long ONE_MINUTE        = 60*ONE_SECOND;
-const long FIVE_MINUTES      = 5*ONE_MINUTE;
-const long TIMER_TIMEOUT     = 5*ONE_SECOND;
+const int LED_PIN                = 5;
+const int manual_control_pin     = 6;  // The ID of the switch pin
+const int infrared_pin           = 7;  // The ID of the infrared sensor
+const int DELAY                  = 100;
+const long ONE_SECOND            = (1000)/DELAY;
+const long ONE_MINUTE            = 60*ONE_SECOND;
+const long FIVE_MINUTES          = 5*ONE_MINUTE;
+const long TIMER_TIMEOUT         = 5*ONE_SECOND;
+const long BUTTON_TIMER_TIMEOUT  = ONE_SECOND;
 
 enum state {
   ON_BY_BUTTON,
   ON_BY_INFRARED,
-  OFF
+  OFF,
+  MAGIC
 };
 
 int   button_state           = 0;           // The initial state of the button
 int   prev_button_state      = 0;           // Store the previous button state
 int   infrared_state         = 0;           // The initial state of the infrared sensor
 state led_state              = OFF;         // Current LED state
+state saved_led_state        = OFF;
 state prev_led_state         = OFF;
 long  led_on_timer           = 0;           // Timer to count how long the LED is on
 int   infrared_timer         = 0;
+int   button_high_timer      = 0;
 
 CRGB leds[NUM_LEDS];                        // Led array
 
@@ -40,6 +44,8 @@ void setup()
   
   Serial.begin(115200);
   Serial.flush();
+  
+  randomSeed(analogRead(1));
 }
 
 void loop()
@@ -49,7 +55,7 @@ void loop()
   button_state      = digitalRead(manual_control_pin);
   infrared_state    = digitalRead(infrared_pin);
 
-  int temp_button_state = prev_button_state != button_state && button_state == HIGH;
+  int temp_button_state = prev_button_state != button_state && button_state == LOW;
   determineNewState(temp_button_state, infrared_state);
     
   checkTimeouts();
@@ -75,19 +81,14 @@ void determineNewState(int button_state, int infrared_state)
   switch (prev_led_state)
   {
     case OFF:
-      if ( button_state == HIGH )
-        led_state = ON_BY_BUTTON;
-      else if ( infrared_state == HIGH )
+      if ( infrared_state == HIGH )
         led_state = ON_BY_INFRARED;
     break;
-    case ON_BY_BUTTON:
-      if ( button_state == HIGH )
-        led_state = OFF;
+    case MAGIC:
+      led_state = saved_led_state;
     break;
     case ON_BY_INFRARED:
-      if ( button_state == HIGH )
-        led_state = OFF;
-      else if ( infrared_state == HIGH )
+      if ( infrared_state == HIGH )
         led_on_timer = 0;
     break;
   }
@@ -95,11 +96,28 @@ void determineNewState(int button_state, int infrared_state)
 
 void checkTimeouts()
 {
-  Serial.print("Timer:");
+  Serial.print("Infrared imer:");
   Serial.print(led_on_timer);
   Serial.print("/");
   Serial.println(TIMER_TIMEOUT);
   
+  Serial.print("Button timer:");
+  Serial.print(button_high_timer);
+  Serial.print("/");
+  Serial.println(BUTTON_TIMER_TIMEOUT);
+  
+  if ( button_state == HIGH )
+    button_high_timer++;
+  else
+    button_high_timer = 0;
+    
+  if ( button_high_timer > BUTTON_TIMER_TIMEOUT )
+  {
+    saved_led_state     = led_state;
+    led_state           = MAGIC;
+    button_high_timer   = 0;
+  }
+    
   if ( led_on_timer > TIMER_TIMEOUT )
   {
     led_state    = OFF;
@@ -116,6 +134,8 @@ void executeLedState()
   if ( prev_led_state != led_state )
      if ( led_state == OFF )
        fadeOut();
+     else if ( led_state == MAGIC)
+       magic();
      else
        fadeIn();
   else // The same state
@@ -143,6 +163,23 @@ void allLedsOff()
   // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
   Serial.println("LED turned off, waiting 5s...");
   delay(5000);
+}
+
+void magic()
+{
+  superFadeIn();
+  return;
+  
+  // generate random number
+  int magic = random(0,3);
+  Serial.print("Magic!!");
+  Serial.println(magic);
+  switch (magic)
+  {
+    case 0: FadeInAndOut();   break;
+    case 1: growingStripes(); break;
+    case 2: oneByOne();       break;
+  }
 }
 
 /** Extra functionalities from the FastLed tutorial **/
@@ -247,4 +284,27 @@ void fadeOut()
   // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
   Serial.println("LED turned off, waiting 5s...");
   delay(5000);
+}
+
+void superFadeIn()
+{
+  for ( int i = 0 ; i < NUM_LEDS/2 ; ++i )
+  {
+    leds[i]          = CRGB::White;
+    leds[NUM_LEDS-i] = CRGB::White;
+    FastLED.show();
+    delay(200);
+    // Turn these off for the next round
+    leds[i]          = CRGB::Black;
+    leds[NUM_LEDS-i] = CRGB::Black;
+  }
+  
+  for ( int i = 0 ; i < NUM_LEDS/2 ; ++i )
+  {
+    leds[NUM_LEDS/2-i] = CRGB::White;
+    leds[NUM_LEDS/2+i] = CRGB::White;
+    FastLED.show();
+    delay(200);
+  }
+  
 }
