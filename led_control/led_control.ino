@@ -52,6 +52,8 @@ void setup()
   
   // Set up timer
   update_leds_timer.every(LED_TRIGGER_UPDATE, updateLeds);
+  
+  Serial.println(CRGB::White);
 }
 
 void loop()
@@ -101,14 +103,8 @@ void fader()
   Serial.print("Status point:");
   Serial.println(status_point);
   Serial.print("Led value:");
-  Serial.println(led_value);  
-  for(int i = 0; i < NUM_LEDS; i++)
-  {
-    leds[i].r = led_value;
-    leds[i].g = led_value;
-    leds[i].b = led_value;
-    FastLED.show();
-  }
+  Serial.println(led_value);
+  setAllLedsToValue(led_value, true);
 }
 
 void turnOff()
@@ -144,13 +140,13 @@ void fadeIn()
     Serial.print(" ");
     Serial.println(NUM_LEDS-status_point/step_size);
     
-    leds[status_point/step_size]          = CRGB::White;
-    leds[NUM_LEDS-status_point/step_size] = CRGB::White;
+    setLedToColor(status_point/step_size,          CRGB::White, false);
+    setLedToColor(NUM_LEDS-status_point/step_size, CRGB::White, true);
     FastLED.show();
     
     // Turn these off for the next round
-    leds[status_point/step_size]          = CRGB::Black;
-    leds[NUM_LEDS-status_point/step_size] = CRGB::Black;
+    setLedToColor(status_point/step_size,          CRGB::Black, false);
+    setLedToColor(NUM_LEDS-status_point/step_size, CRGB::Black, false);
   }
   else if (status_point <= step_size * NUM_LEDS)
   {
@@ -158,36 +154,58 @@ void fadeIn()
     Serial.print(NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size);
     Serial.print(" ");
     Serial.println(NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size);
-    
-    leds[NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
-    leds[NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
-    FastLED.show();
+    setLedToColor(NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size, CRGB::White, false);
+    setLedToColor(NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size, CRGB::White, true);
   }
   
   // Fix possible overload of status point
   status_point = min(status_point,SET_POINT_HIGH);
 }
 
+void setLedToValue( int led, int value, bool show )
+{
+  leds[led].r = value;
+  leds[led].g = value;
+  leds[led].b = value;
+  if (show)
+    FastLED.show();
+}
+
+void setAllLedsToValue( int value, bool show)
+{
+  for ( int i = 0 ; i < NUM_LEDS ; ++i )
+    setLedToValue(i, value, false);
+    
+  if (show)
+    FastLED.show();
+}
+
+void setLedToColor( int led, int color, bool show )
+{
+  leds[led] = color;
+  if (show)
+    FastLED.show();
+}
+
+void setAllLedsToColor( int color, bool show)
+{
+  for ( int i = 0 ; i < NUM_LEDS ; ++i )
+    setLedToValue(i, color, false);
+    
+  if (show)
+    FastLED.show();
+}
+
 void allLedsWhite()
 {
-  // Turn LEDs on 
-  for ( int i = 0 ; i < NUM_LEDS ; ++i )
-    leds[i] = CRGB::White;
-    
-  FastLED.show();       // Display LEDs 
+  // Turn LEDs on
+  setAllLedsToColor(CRGB::White, true);
 }
 
 void allLedsOff()
 {
   // Turn LEDs off 
-  for ( int i = 0 ; i < NUM_LEDS ; ++i )
-    leds[i] = CRGB::Black;
-    
-  FastLED.show();       // Display LEDs 
-  
-  // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
-  Serial.println("LED turned off, waiting 5s...");
-  delay(5000);
+  setAllLedsToColor(CRGB::Black, true);
 }
 
 void magic()
