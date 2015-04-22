@@ -23,6 +23,7 @@ const long LED_TRIGGER_UPDATE     = 50;
 
 // Led properties 
 const int MAX_LED_VALUE          = 255;
+const int MIN_LED_VALUE          = 0;
 
 Timer update_leds_timer;
 
@@ -30,7 +31,7 @@ int   status_point   = 0;
 int   set_point      = 0;
 int   turn_off_event = 0;
 
-CRGB leds[NUM_LEDS];                        // Led array
+CRGB leds[NUM_LEDS];                   // Led array
 
 void setup()
 { 
@@ -80,7 +81,7 @@ void updateLeds()
   if ( status_point == set_point )
     return;
     
-  if ( status_point < set_point && status_point == SET_POINT_LOW )
+  if ( status_point < set_point && fadingIn() )
     fadeIn();
   else
     fader();
@@ -101,19 +102,34 @@ void fader()
   Serial.println(status_point);
   Serial.print("Led value:");
   Serial.println(led_value);  
-   for(int i = 0; i < NUM_LEDS; i++)
-   {
-      leds[i].r = status_point;
-      leds[i].g = status_point;
-      leds[i].b = status_point;
-      FastLED.show();
-   }
+  for(int i = 0; i < NUM_LEDS; i++)
+  {
+    leds[i].r = led_value;
+    leds[i].g = led_value;
+    leds[i].b = led_value;
+    FastLED.show();
+  }
 }
 
 void turnOff()
 {
   Serial.println("Turn off event triggered");
   set_point = SET_POINT_LOW; 
+}
+
+bool fadingIn()
+{
+  for(int i = 0; i < NUM_LEDS; i++)
+  {
+    if (leds[i].r == MIN_LED_VALUE)
+      return true;
+    if (leds[i].g == MIN_LED_VALUE)
+      return true;
+    if (leds[i].b == MIN_LED_VALUE)
+      return true;
+  }
+  
+  return false;
 }
 
 void fadeIn()
@@ -146,7 +162,10 @@ void fadeIn()
     leds[NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
     leds[NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
     FastLED.show();
-  }  
+  }
+  
+  // Fix possible overload of status point
+  status_point = min(status_point,SET_POINT_HIGH);
 }
 
 void allLedsWhite()
