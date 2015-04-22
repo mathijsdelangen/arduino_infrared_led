@@ -18,7 +18,7 @@ const int MAX_STEPS_TO_SET_POINT = 75;
 const int STEP_SIZE              = SET_POINT_HIGH/MAX_STEPS_TO_SET_POINT;
 
 // Timeouts
-const long LED_TIME_OUT           = 5 * 60 * 1000;
+const long LED_TIME_OUT           = 10 * 1000;
 const long LED_TRIGGER_UPDATE     = 50;
 
 // Led properties 
@@ -80,7 +80,7 @@ void updateLeds()
   if ( status_point == set_point )
     return;
     
-  if ( status_point < set_point )
+  if ( status_point < set_point && status_point == SET_POINT_LOW )
     fadeIn();
   else
     fader();
