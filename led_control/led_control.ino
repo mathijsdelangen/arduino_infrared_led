@@ -1,3 +1,6 @@
+#include <Timer.h>
+#include <Event.h>
+
 #include "FastLED.h"
 // http://www.tweaking4all.nl/hardware/arduino/arduino-ws2812-led/
 
@@ -7,34 +10,31 @@
 const int LED_PIN                = 5;
 const int manual_control_pin     = 6;  // The ID of the switch pin
 const int infrared_pin           = 7;  // The ID of the infrared sensor
-const int DELAY                  = 100;
-const long ONE_SECOND            = (1000)/DELAY;
-const long ONE_MINUTE            = 60*ONE_SECOND;
-const long FIVE_MINUTES          = 5*ONE_MINUTE;
-const long TIMER_TIMEOUT         = 5*ONE_SECOND;
-const long BUTTON_TIMER_TIMEOUT  = ONE_SECOND;
 
-enum state {
-  ON_BY_BUTTON,
-  ON_BY_INFRARED,
-  OFF,
-  MAGIC
-};
+// Set points
+const int SET_POINT_HIGH         = 100;
+const int SET_POINT_LOW          = 0;
+const int MAX_STEPS_TO_SET_POINT = 75;
+const int STEP_SIZE              = SET_POINT_HIGH/MAX_STEPS_TO_SET_POINT;
 
-int   button_state           = 0;           // The initial state of the button
-int   prev_button_state      = 0;           // Store the previous button state
-int   infrared_state         = 0;           // The initial state of the infrared sensor
-state led_state              = OFF;         // Current LED state
-state saved_led_state        = OFF;
-state prev_led_state         = OFF;
-long  led_on_timer           = 0;           // Timer to count how long the LED is on
-int   infrared_timer         = 0;
-int   button_high_timer      = 0;
+// Timeouts
+const long LED_TIME_OUT           = 5 * 60 * 1000;
+const long LED_TRIGGER_UPDATE     = 50;
+
+// Led properties 
+const int MAX_LED_VALUE          = 255;
+
+Timer update_leds_timer;
+
+int   status_point   = 0;
+int   set_point      = 0;
+int   turn_off_event = 0;
 
 CRGB leds[NUM_LEDS];                        // Led array
 
 void setup()
 { 
+  // Initialize pins and leds
   FastLED.addLeds<NEOPIXEL, LED_PIN, RGB>(leds, NUM_LEDS);
   pinMode(infrared_pin,       INPUT);
   pinMode(manual_control_pin, INPUT);
@@ -42,105 +42,111 @@ void setup()
   // Initialize LEDs off
   allLedsOff();
   
+  // Debug serial intialization
   Serial.begin(115200);
   Serial.flush();
   
+  // Seed for random numbers
   randomSeed(analogRead(1));
+  
+  // Set up timer
+  update_leds_timer.every(LED_TRIGGER_UPDATE, updateLeds);
 }
 
 void loop()
 {
   // Read button value
-  prev_button_state = button_state;
-  button_state      = digitalRead(manual_control_pin);
-  infrared_state    = digitalRead(infrared_pin);
+  //prev_button_state = button_state;
+  //button_state      = digitalRead(manual_control_pin);
 
-  int temp_button_state = prev_button_state != button_state && button_state == LOW;
-  determineNewState(temp_button_state, infrared_state);
-    
-  checkTimeouts();
-  executeLedState();
-    
-  //Serial.println("I saw something");
-  
-  delay(DELAY);
-}
-
-void determineNewState(int button_state, int infrared_state)
-{
-  Serial.print("Button state:");
-  Serial.print(button_state);
-  Serial.print(", Infrared state:");
-  Serial.println(infrared_state);
-  
-  prev_led_state = led_state;
-  
-  Serial.print("Prev state:");
-  Serial.println(prev_led_state);
-  
-  switch (prev_led_state)
+  if ( digitalRead(infrared_pin) == HIGH )
   {
-    case OFF:
-      if ( infrared_state == HIGH )
-        led_state = ON_BY_INFRARED;
-    break;
-    case MAGIC:
-      led_state = saved_led_state;
-    break;
-    case ON_BY_INFRARED:
-      if ( infrared_state == HIGH )
-        led_on_timer = 0;
-    break;
+    // If a callback is stored
+    if ( turn_off_event > 0 )
+      update_leds_timer.stop(turn_off_event);
+
+    turn_off_event = update_leds_timer.after(LED_TIME_OUT, turnOff);
+    set_point      = SET_POINT_HIGH;
   }
+    
+  update_leds_timer.update();
+  
+  delay(10);
 }
 
-void checkTimeouts()
+void updateLeds()
 {
-  Serial.print("Infrared imer:");
-  Serial.print(led_on_timer);
-  Serial.print("/");
-  Serial.println(TIMER_TIMEOUT);
-  
-  Serial.print("Button timer:");
-  Serial.print(button_high_timer);
-  Serial.print("/");
-  Serial.println(BUTTON_TIMER_TIMEOUT);
-  
-  if ( button_state == HIGH )
-    button_high_timer++;
+  // Do nothing is set point is reached
+  if ( status_point == set_point )
+    return;
+    
+  if ( status_point < set_point )
+    fadeIn();
   else
-    button_high_timer = 0;
-    
-  if ( button_high_timer > BUTTON_TIMER_TIMEOUT )
-  {
-    saved_led_state     = led_state;
-    led_state           = MAGIC;
-    button_high_timer   = 0;
-  }
-    
-  if ( led_on_timer > TIMER_TIMEOUT )
-  {
-    led_state    = OFF;
-    led_on_timer = 0;
-  }
-  
-  Serial.print("New state:");
-  Serial.println(led_state);
+    fader();
 }
 
-void executeLedState()
+void fader()
+{ 
+  if ( status_point < set_point )
+    status_point += STEP_SIZE;
+    
+  if ( status_point > set_point )
+    status_point -= STEP_SIZE;
+    
+  double scaling_factor = ((double)MAX_LED_VALUE/(double)SET_POINT_HIGH);
+  int led_value         = scaling_factor*status_point;
+  
+  Serial.print("Status point:");
+  Serial.println(status_point);
+  Serial.print("Led value:");
+  Serial.println(led_value);  
+   for(int i = 0; i < NUM_LEDS; i++)
+   {
+      leds[i].r = status_point;
+      leds[i].g = status_point;
+      leds[i].b = status_point;
+      FastLED.show();
+   }
+}
+
+void turnOff()
 {
-  // Something changed
-  if ( prev_led_state != led_state )
-     if ( led_state == OFF )
-       fadeOut();
-     else if ( led_state == MAGIC)
-       magic();
-     else
-       fadeIn();
-  else // The same state
-    if ( led_state == ON_BY_INFRARED )
-      led_on_timer++;
+  Serial.println("Turn off event triggered");
+  set_point = SET_POINT_LOW; 
+}
+
+void fadeIn()
+{ 
+  int step_size = floor(SET_POINT_HIGH / NUM_LEDS);
+  status_point += step_size;
+  
+  if (status_point <= step_size*(NUM_LEDS/2))
+  { 
+    Serial.print("Turn on the following leds(1):");
+    Serial.print(status_point/step_size);
+    Serial.print(" ");
+    Serial.println(NUM_LEDS-status_point/step_size);
+    
+    leds[status_point/step_size]          = CRGB::White;
+    leds[NUM_LEDS-status_point/step_size] = CRGB::White;
+    FastLED.show();
+    
+    // Turn these off for the next round
+    leds[status_point/step_size]          = CRGB::Black;
+    leds[NUM_LEDS-status_point/step_size] = CRGB::Black;
+  }
+  else if (status_point <= step_size * NUM_LEDS)
+  {
+    Serial.print("Turn on the following leds(2):");
+    Serial.print(NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size);
+    Serial.print(" ");
+    Serial.println(NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size);
+    
+    leds[NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
+    leds[NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size] = CRGB::White;
+    FastLED.show();
+  }  
 }
 
 void allLedsWhite()
@@ -167,7 +173,7 @@ void allLedsOff()
 
 void magic()
 {
-  superFadeIn();
+//  superFadeIn();
   return;
   
   // generate random number
@@ -252,59 +258,4 @@ void FadeInAndOut()
       delay(3);
     }
   }
-}
-
-void fadeIn()
-{
-   for(int k = 0; k <= 255; k=k+20)
-   {
-      for(int i = 0; i < NUM_LEDS; i++)
-      {
-        leds[i].r = k;
-        leds[i].g = k;
-        leds[i].b = k;
-        FastLED.show();
-        delay(1);
-      }
-      
-   }
-}
-void fadeOut()
-{
-  for(int k = 255; k >= 0; k=k-5)
-      for(int i = 0; i < NUM_LEDS; i++)
-      {
-        leds[i].r = k;
-        leds[i].g = k;
-        leds[i].b = k;
-        FastLED.show();
-        delay(1);
-      }
-      
-  // Wait 5 seconds, hack to not let noise interfere with the infrared sensor
-  Serial.println("LED turned off, waiting 5s...");
-  delay(5000);
-}
-
-void superFadeIn()
-{
-  for ( int i = 0 ; i < NUM_LEDS/2 ; ++i )
-  {
-    leds[i]          = CRGB::White;
-    leds[NUM_LEDS-i] = CRGB::White;
-    FastLED.show();
-    delay(200);
-    // Turn these off for the next round
-    leds[i]          = CRGB::Black;
-    leds[NUM_LEDS-i] = CRGB::Black;
-  }
-  
-  for ( int i = 0 ; i < NUM_LEDS/2 ; ++i )
-  {
-    leds[NUM_LEDS/2-i] = CRGB::White;
-    leds[NUM_LEDS/2+i] = CRGB::White;
-    FastLED.show();
-    delay(200);
-  }
-  
 }
