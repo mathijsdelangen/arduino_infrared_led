@@ -212,20 +212,21 @@ void loop()
 
   if ( button_state == HIGH && button_state != prev_button_state)
   {
-    Serial.println(CRGB::Maroon);
-    on_by_button = !on_by_button;
-    if ( on_by_button)
-    {
-      FastLED.setBrightness(30);
-      loopTroughColors();
-      //setAllLedsToColor(CRGB::Red, true);
-    }
-    else
-    {
-      setAllLedsToColor(CRGB::Black, true);
-      status_point = 0;
-    }
+    loopTroughColors();
+//    on_by_button = !on_by_button;
+//    if ( on_by_button)
+//    {
+//      FastLED.setBrightness(30);
+//      loopTroughColors();
+//      //setAllLedsToColor(CRGB::Red, true);
+//    }
+//    else
+//    {
+//      setAllLedsToColor(CRGB::Black, true);
+//      status_point = 0;
+//    }
   }
+  
   if (!on_by_button)
   {
     FastLED.setBrightness(95);
