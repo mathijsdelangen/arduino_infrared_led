@@ -213,6 +213,7 @@ void loop()
   if ( button_state == HIGH && button_state != prev_button_state)
   {
     loopTroughColors();
+    status_point = 0;
 //    on_by_button = !on_by_button;
 //    if ( on_by_button)
 //    {
