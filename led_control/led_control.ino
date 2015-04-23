@@ -6,6 +6,151 @@
 
 #define NUM_LEDS 30  // Number of RGB LEDs in the strip
 
+// test colors
+int all_the_colors[] = {
+ CRGB::AliceBlue
+, CRGB::Amethyst
+, CRGB::AntiqueWhite
+, CRGB::Aqua
+, CRGB::Aquamarine
+, CRGB::Azure
+, CRGB::Beige
+, CRGB::Bisque
+, CRGB::Black
+, CRGB::BlanchedAlmond
+, CRGB::Blue
+, CRGB::BlueViolet
+, CRGB::Brown
+, CRGB::BurlyWood
+, CRGB::CadetBlue
+, CRGB::Chartreuse
+, CRGB::Chocolate
+, CRGB::Coral
+, CRGB::CornflowerBlue
+, CRGB::Cornsilk
+, CRGB::Crimson
+, CRGB::Cyan
+, CRGB::DarkBlue
+, CRGB::DarkCyan
+, CRGB::DarkGoldenrod
+, CRGB::DarkGray
+, CRGB::DarkGreen
+, CRGB::DarkKhaki
+, CRGB::DarkMagenta
+, CRGB::DarkOliveGreen
+, CRGB::DarkOrange
+, CRGB::DarkOrchid
+, CRGB::DarkRed
+, CRGB::DarkSalmon
+, CRGB::DarkSeaGreen
+, CRGB::DarkSlateBlue
+, CRGB::DarkSlateGray
+, CRGB::DarkTurquoise
+, CRGB::DarkViolet
+, CRGB::DeepPink
+, CRGB::DeepSkyBlue
+, CRGB::DimGray
+, CRGB::DodgerBlue
+, CRGB::FireBrick
+, CRGB::FloralWhite
+, CRGB::ForestGreen
+, CRGB::Fuchsia
+, CRGB::Gainsboro
+, CRGB::GhostWhite
+, CRGB::Gold
+, CRGB::Goldenrod
+, CRGB::Gray
+, CRGB::Green
+, CRGB::GreenYellow
+, CRGB::Honeydew
+, CRGB::HotPink
+, CRGB::IndianRed
+, CRGB::Indigo
+, CRGB::Ivory
+, CRGB::Khaki
+, CRGB::Lavender
+, CRGB::LavenderBlush
+, CRGB::LawnGreen
+, CRGB::LemonChiffon
+, CRGB::LightBlue
+, CRGB::LightCoral
+, CRGB::LightCyan
+, CRGB::LightGoldenrodYellow
+, CRGB::LightGreen
+, CRGB::LightGrey
+, CRGB::LightPink
+, CRGB::LightSalmon
+, CRGB::LightSeaGreen
+, CRGB::LightSkyBlue
+, CRGB::LightSlateGray
+, CRGB::LightSteelBlue
+, CRGB::LightYellow
+, CRGB::Lime
+, CRGB::LimeGreen
+, CRGB::Linen
+, CRGB::Magenta
+, CRGB::Maroon
+, CRGB::MediumAquamarine
+, CRGB::MediumBlue
+, CRGB::MediumOrchid
+, CRGB::MediumPurple
+, CRGB::MediumSeaGreen
+, CRGB::MediumSlateBlue
+, CRGB::MediumSpringGreen
+, CRGB::MediumTurquoise
+, CRGB::MediumVioletRed
+, CRGB::MidnightBlue
+, CRGB::MintCream
+, CRGB::MistyRose
+, CRGB::Moccasin
+, CRGB::NavajoWhite
+, CRGB::Navy
+, CRGB::OldLace
+, CRGB::Olive
+, CRGB::OliveDrab
+, CRGB::Orange
+, CRGB::OrangeRed
+, CRGB::Orchid
+, CRGB::PaleGoldenrod
+, CRGB::PaleGreen
+, CRGB::PaleTurquoise
+, CRGB::PaleVioletRed
+, CRGB::PapayaWhip
+, CRGB::PeachPuff
+, CRGB::Peru
+, CRGB::Pink
+, CRGB::Plaid
+, CRGB::Plum
+, CRGB::PowderBlue
+, CRGB::Purple
+, CRGB::Red
+, CRGB::RosyBrown
+, CRGB::RoyalBlue
+, CRGB::SaddleBrown
+, CRGB::Salmon
+, CRGB::SandyBrown
+, CRGB::SeaGreen
+, CRGB::Seashell
+, CRGB::Sienna
+, CRGB::Silver
+, CRGB::SkyBlue
+, CRGB::SlateBlue
+, CRGB::SlateGray
+, CRGB::Snow
+, CRGB::SpringGreen
+, CRGB::SteelBlue
+, CRGB::Tan
+, CRGB::Teal
+, CRGB::Thistle
+, CRGB::Tomato
+, CRGB::Turquoise
+, CRGB::Violet
+, CRGB::Wheat
+, CRGB::White
+, CRGB::WhiteSmoke
+, CRGB::Yellow
+, CRGB::YellowGreen };
+
 // Set pin numbers:
 const int LED_PIN                = 5;
 const int manual_control_pin     = 6;  // The ID of the switch pin
@@ -31,6 +176,11 @@ int   status_point   = 0;
 int   set_point      = 0;
 int   turn_off_event = 0;
 
+// Button stuff
+int  button_state      = 0;
+int  prev_button_state = 0;
+bool on_by_button      = false;
+
 CRGB leds[NUM_LEDS];                   // Led array
 
 void setup()
@@ -52,29 +202,69 @@ void setup()
   
   // Set up timer
   update_leds_timer.every(LED_TRIGGER_UPDATE, updateLeds);
-  
-  Serial.println(CRGB::White);
 }
 
 void loop()
 {
   // Read button value
-  //prev_button_state = button_state;
-  //button_state      = digitalRead(manual_control_pin);
+  prev_button_state = button_state;
+  button_state      = digitalRead(manual_control_pin);
 
-  if ( digitalRead(infrared_pin) == HIGH )
+  if ( button_state == HIGH && button_state != prev_button_state)
   {
-    // If a callback is stored
-    if ( turn_off_event > 0 )
-      update_leds_timer.stop(turn_off_event);
-
-    turn_off_event = update_leds_timer.after(LED_TIME_OUT, turnOff);
-    set_point      = SET_POINT_HIGH;
+    Serial.println(CRGB::Maroon);
+    on_by_button = !on_by_button;
+    if ( on_by_button)
+    {
+      FastLED.setBrightness(30);
+      loopTroughColors();
+      //setAllLedsToColor(CRGB::Red, true);
+    }
+    else
+    {
+      setAllLedsToColor(CRGB::Black, true);
+      status_point = 0;
+    }
   }
-    
-  update_leds_timer.update();
+  if (!on_by_button)
+  {
+    FastLED.setBrightness(95);
+    if ( digitalRead(infrared_pin) == HIGH )
+    {
+      resetTurnOffEvent();
+  
+      turn_off_event = update_leds_timer.after(LED_TIME_OUT, turnOff);
+      set_point      = SET_POINT_HIGH;
+    }
+      
+    update_leds_timer.update();
+  }
   
   delay(10);
+}
+
+void loopTroughColors()
+{
+  int size = sizeof(all_the_colors);
+  Serial.print("Looping through ");
+  Serial.print(size);
+  Serial.println("colors");
+  for ( int i = 0 ; i < size ; ++i )
+  {
+    Serial.print("Color ");
+    Serial.print(i);
+    Serial.print(" ");
+    Serial.println(all_the_colors[i]);
+    setAllLedsToColor(all_the_colors[i], true);
+    delay(100);
+  } 
+  
+}
+void resetTurnOffEvent()
+{
+  // If a callback is stored
+  if ( turn_off_event > 0 )
+    update_leds_timer.stop(turn_off_event);
 }
 
 void updateLeds()
@@ -171,7 +361,7 @@ void setLedToValue( int led, int value, bool show )
     FastLED.show();
 }
 
-void setAllLedsToValue( int value, bool show)
+void setAllLedsToValue( int value, bool show )
 {
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
     setLedToValue(i, value, false);
@@ -180,17 +370,17 @@ void setAllLedsToValue( int value, bool show)
     FastLED.show();
 }
 
-void setLedToColor( int led, int color, bool show )
+void setLedToColor( int led, CRGB color, bool show )
 {
   leds[led] = color;
   if (show)
     FastLED.show();
 }
 
-void setAllLedsToColor( int color, bool show)
-{
+void setAllLedsToColor( CRGB color, bool show )
+{  
   for ( int i = 0 ; i < NUM_LEDS ; ++i )
-    setLedToValue(i, color, false);
+    setLedToColor(i, color, false);
     
   if (show)
     FastLED.show();
@@ -209,10 +399,7 @@ void allLedsOff()
 }
 
 void magic()
-{
-//  superFadeIn();
-  return;
-  
+{ 
   // generate random number
   int magic = random(0,3);
   Serial.print("Magic!!");
