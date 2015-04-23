@@ -321,9 +321,8 @@ bool fadingIn()
 void fadeIn()
 { 
   int step_size = floor(SET_POINT_HIGH / NUM_LEDS);
-  status_point += step_size;
   
-  if (status_point <= step_size*(NUM_LEDS/2))
+  if (status_point < step_size*(NUM_LEDS/2))
   { 
     Serial.print("Turn on the following leds(1):");
     Serial.print(status_point/step_size);
@@ -347,6 +346,8 @@ void fadeIn()
     setLedToColor(NUM_LEDS/2 + (status_point-step_size*(NUM_LEDS/2))/step_size, CRGB::White, false);
     setLedToColor(NUM_LEDS/2 - (status_point-step_size*(NUM_LEDS/2))/step_size, CRGB::White, true);
   }
+  
+  status_point += step_size;
   
   // Fix possible overload of status point
   status_point = min(status_point,SET_POINT_HIGH);
