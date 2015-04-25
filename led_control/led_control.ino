@@ -7,149 +7,11 @@
 #define NUM_LEDS 30  // Number of RGB LEDs in the strip
 
 // test colors
-int all_the_colors[] = {
- CRGB::AliceBlue
-, CRGB::Amethyst
-, CRGB::AntiqueWhite
-, CRGB::Aqua
-, CRGB::Aquamarine
-, CRGB::Azure
-, CRGB::Beige
-, CRGB::Bisque
-, CRGB::Black
-, CRGB::BlanchedAlmond
+int colors[] = {
+  CRGB::White
 , CRGB::Blue
-, CRGB::BlueViolet
-, CRGB::Brown
-, CRGB::BurlyWood
-, CRGB::CadetBlue
-, CRGB::Chartreuse
-, CRGB::Chocolate
-, CRGB::Coral
-, CRGB::CornflowerBlue
-, CRGB::Cornsilk
-, CRGB::Crimson
-, CRGB::Cyan
-, CRGB::DarkBlue
-, CRGB::DarkCyan
-, CRGB::DarkGoldenrod
-, CRGB::DarkGray
-, CRGB::DarkGreen
-, CRGB::DarkKhaki
-, CRGB::DarkMagenta
-, CRGB::DarkOliveGreen
-, CRGB::DarkOrange
-, CRGB::DarkOrchid
-, CRGB::DarkRed
-, CRGB::DarkSalmon
-, CRGB::DarkSeaGreen
-, CRGB::DarkSlateBlue
-, CRGB::DarkSlateGray
-, CRGB::DarkTurquoise
-, CRGB::DarkViolet
-, CRGB::DeepPink
-, CRGB::DeepSkyBlue
-, CRGB::DimGray
-, CRGB::DodgerBlue
-, CRGB::FireBrick
-, CRGB::FloralWhite
-, CRGB::ForestGreen
-, CRGB::Fuchsia
-, CRGB::Gainsboro
-, CRGB::GhostWhite
-, CRGB::Gold
-, CRGB::Goldenrod
-, CRGB::Gray
-, CRGB::Green
-, CRGB::GreenYellow
-, CRGB::Honeydew
-, CRGB::HotPink
-, CRGB::IndianRed
-, CRGB::Indigo
-, CRGB::Ivory
-, CRGB::Khaki
-, CRGB::Lavender
-, CRGB::LavenderBlush
-, CRGB::LawnGreen
-, CRGB::LemonChiffon
-, CRGB::LightBlue
-, CRGB::LightCoral
-, CRGB::LightCyan
-, CRGB::LightGoldenrodYellow
-, CRGB::LightGreen
-, CRGB::LightGrey
-, CRGB::LightPink
-, CRGB::LightSalmon
-, CRGB::LightSeaGreen
-, CRGB::LightSkyBlue
-, CRGB::LightSlateGray
-, CRGB::LightSteelBlue
-, CRGB::LightYellow
-, CRGB::Lime
-, CRGB::LimeGreen
-, CRGB::Linen
-, CRGB::Magenta
-, CRGB::Maroon
-, CRGB::MediumAquamarine
-, CRGB::MediumBlue
-, CRGB::MediumOrchid
-, CRGB::MediumPurple
-, CRGB::MediumSeaGreen
-, CRGB::MediumSlateBlue
-, CRGB::MediumSpringGreen
-, CRGB::MediumTurquoise
-, CRGB::MediumVioletRed
-, CRGB::MidnightBlue
-, CRGB::MintCream
-, CRGB::MistyRose
-, CRGB::Moccasin
-, CRGB::NavajoWhite
-, CRGB::Navy
-, CRGB::OldLace
-, CRGB::Olive
-, CRGB::OliveDrab
-, CRGB::Orange
-, CRGB::OrangeRed
-, CRGB::Orchid
-, CRGB::PaleGoldenrod
-, CRGB::PaleGreen
-, CRGB::PaleTurquoise
-, CRGB::PaleVioletRed
-, CRGB::PapayaWhip
-, CRGB::PeachPuff
-, CRGB::Peru
-, CRGB::Pink
-, CRGB::Plaid
-, CRGB::Plum
-, CRGB::PowderBlue
-, CRGB::Purple
-, CRGB::Red
-, CRGB::RosyBrown
-, CRGB::RoyalBlue
-, CRGB::SaddleBrown
-, CRGB::Salmon
-, CRGB::SandyBrown
-, CRGB::SeaGreen
-, CRGB::Seashell
-, CRGB::Sienna
-, CRGB::Silver
-, CRGB::SkyBlue
-, CRGB::SlateBlue
-, CRGB::SlateGray
-, CRGB::Snow
-, CRGB::SpringGreen
-, CRGB::SteelBlue
-, CRGB::Tan
-, CRGB::Teal
-, CRGB::Thistle
-, CRGB::Tomato
-, CRGB::Turquoise
-, CRGB::Violet
-, CRGB::Wheat
-, CRGB::White
-, CRGB::WhiteSmoke
 , CRGB::Yellow
-, CRGB::YellowGreen };
+};
 
 // Set pin numbers:
 const int LED_PIN                = 5;
@@ -162,8 +24,8 @@ const int SET_POINT_LOW          = 0;
 const int MAX_STEPS_TO_SET_POINT = 75;
 const int STEP_SIZE              = SET_POINT_HIGH/MAX_STEPS_TO_SET_POINT;
 
-// Timeouts
-const long LED_TIME_OUT           = 10 * 1000;
+// Timeoutsn on
+const long LED_TIME_OUT           = 7*1000;
 const long LED_TRIGGER_UPDATE     = 50;
 
 // Led properties 
@@ -181,7 +43,9 @@ int  button_state      = 0;
 int  prev_button_state = 0;
 bool on_by_button      = false;
 
-CRGB leds[NUM_LEDS];                   // Led array
+// leds
+CRGB leds[NUM_LEDS];                    // Led array
+int   set_color_id     = 0;             // Start with white
 
 void setup()
 { 
@@ -211,57 +75,34 @@ void loop()
   button_state      = digitalRead(manual_control_pin);
 
   if ( button_state == HIGH && button_state != prev_button_state)
+    changeSetColor();
+  
+  //FastLED.setBrightness(95);
+  if ( digitalRead(infrared_pin) == HIGH )
   {
-    loopTroughColors();
-    status_point = 0;
-//    on_by_button = !on_by_button;
-//    if ( on_by_button)
-//    {
-//      FastLED.setBrightness(30);
-//      loopTroughColors();
-//      //setAllLedsToColor(CRGB::Red, true);
-//    }
-//    else
-//    {
-//      setAllLedsToColor(CRGB::Black, true);
-//      status_point = 0;
-//    }
+    Serial.println("Reset event");
+    resetTurnOffEvent();
+
+    turn_off_event = update_leds_timer.after(LED_TIME_OUT, turnOff);
+    Serial.print("Turn off event: ");
+    Serial.println(turn_off_event);
+    set_point      = SET_POINT_HIGH;
   }
+    
+  update_leds_timer.update();
+
   
-  if (!on_by_button)
-  {
-    FastLED.setBrightness(95);
-    if ( digitalRead(infrared_pin) == HIGH )
-    {
-      resetTurnOffEvent();
-  
-      turn_off_event = update_leds_timer.after(LED_TIME_OUT, turnOff);
-      set_point      = SET_POINT_HIGH;
-    }
-      
-    update_leds_timer.update();
-  }
-  
-  delay(10);
+  delay(1);
 }
 
-void loopTroughColors()
+void changeSetColor()
 {
-  int size = sizeof(all_the_colors);
-  Serial.print("Looping through ");
-  Serial.print(size);
-  Serial.println("colors");
-  for ( int i = 0 ; i < size ; ++i )
-  {
-    Serial.print("Color ");
-    Serial.print(i);
-    Serial.print(" ");
-    Serial.println(all_the_colors[i]);
-    setAllLedsToColor(all_the_colors[i], true);
-    delay(100);
-  } 
-  
+  if (set_color_id+1 >= sizeof(colors) ) 
+    set_color_id = 0;
+  else
+    set_color_id++;
 }
+
 void resetTurnOffEvent()
 {
   // If a callback is stored
